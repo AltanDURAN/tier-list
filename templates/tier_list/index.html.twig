@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Tier Lists{% endblock %}
+
+{% block body %}
+<h1>Mes Tier Lists</h1>
+
+<a href="{{ path('tierlist_create') }}">Créer une nouvelle Tier List</a>
+
+<ul>
+    {% for tierList in tierLists %}
+        <li>
+            <a href="{{ path('tierlist_edit', {'id': tierList.id}) }}">
+                {{ tierList.name }}
+            </a>
+        </li>
+    {% else %}
+        <li>Aucune tier list pour le moment</li>
+    {% endfor %}
+</ul>
+{% endblock %}

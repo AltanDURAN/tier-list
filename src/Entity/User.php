@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -31,6 +33,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column]
     private ?string $password = null;
+
+    /**
+     * @var datetime The creation date
+     */
+    #[ORM\Column(type: 'datetime')]
+    private \DateTimeInterface $createdAt;
+
+    /**
+     * @var Collection<int, TierList>
+     */
+    #[ORM\OneToMany(targetEntity: TierList::class, mappedBy: 'owner')]
+    private Collection $tierLists;
 
     public function getId(): ?int
     {
@@ -96,6 +110,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->tierLists = new ArrayCollection();
+    }
+
+    public function getCreatedAt(): ?\DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
     /**
      * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
      */
@@ -105,5 +130,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
 
         return $data;
+    }
+
+    /**
+     * @return Collection<int, TierList>
+     */
+    public function getTierLists(): Collection
+    {
+        return $this->tierLists;
+    }
+
+    public function addTierList(TierList $tierList): static
+    {
+        if (!$this->tierLists->contains($tierList)) {
+            $this->tierLists->add($tierList);
+            $tierList->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTierList(TierList $tierList): static
+    {
+        if ($this->tierLists->removeElement($tierList)) {
+            // set the owning side to null (unless already changed)
+            if ($tierList->getOwner() === $this) {
+                $tierList->setOwner(null);
+            }
+        }
+
+        return $this;
     }
 }

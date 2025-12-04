@@ -1,0 +1,65 @@
+{# templates/tier_list/edit.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Édition Tier List{% endblock %}
+
+{% block body %}
+<h1>Édition de la Tier List : {{ tierList.name }}</h1>
+
+<div>
+    <a href="{{ path('tierlist_index') }}">← Retour aux tier lists</a>
+</div>
+
+<table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Tier</th>
+            <th>Items</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="tiers-table">
+        {% for tier in tierList.tiers %}
+            <tr data-tier-id="{{ tier.id }}">
+                <td contenteditable="true">{{ tier.name }}</td>
+                <td>
+                    {% for item in tier.tierItems %}
+                        <div class="tier-item" data-item-id="{{ item.id }}">
+                            <img src="{{ asset('uploads/' ~ item.image) }}" alt="{{ item.name }}" width="50">
+                            {{ item.name }}
+                        </div>
+                    {% endfor %}
+                </td>
+                <td>
+                    <button class="delete-tier">Supprimer</button>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Non classés</h2>
+<div id="unassigned-items">
+    {% for item in tierList.items %}
+        {% if item.tier is null %}
+            <div class="tier-item" data-item-id="{{ item.id }}">
+                <img src="{{ asset('uploads/' ~ item.image) }}" alt="{{ item.name }}" width="50">
+                {{ item.name }}
+            </div>
+        {% endif %}
+    {% endfor %}
+
+</div>
+
+<button id="save-tierlist">Sauvegarder</button>
+
+{# Ici tu pourras ajouter ton JS pour drag & drop, création de tiers, renommage etc. #}
+<script>
+    // Exemple minimal : console log des ids pour test
+    document.querySelectorAll('.tier-item').forEach(el => {
+        el.addEventListener('click', () => {
+            console.log('Item ID:', el.dataset.itemId);
+        });
+    });
+</script>
+{% endblock %}

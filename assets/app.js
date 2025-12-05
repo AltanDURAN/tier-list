@@ -1,12 +1,16 @@
+// assets/app.js
+
+// Tailwind CSS pur
+import './styles/app-tailwind.css';
+
+// Tes styles personnalisés
 import './styles/app.css';
 
-console.log('This log comes from assets/app.js - welcome to AssetMapper! 🎉');
-
-// Alpine.js
+// Alpine + Sortable
 import Alpine from 'alpinejs';
-window.Alpine = Alpine;
-Alpine.start();
-
-// SortableJS
 import Sortable from 'sortablejs';
+
+window.Alpine = Alpine;
 window.Sortable = Sortable;
+
+Alpine.start();

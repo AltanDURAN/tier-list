@@ -1,3 +1,82 @@
+/* Tailwind base */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================
+   Tier List Styles
+   ============================ */
+
+/* Conteneur de la TierList */
+.tier-list {
+  @apply w-full max-w-5xl mx-auto space-y-4;
+}
+
+/* Chaque Tier */
+.tier {
+  @apply bg-gray-100 border border-l-2 border-r-2 rounded-lg pr-2 pb-2 flex shadow-sm items-stretch;
+}
+
+.tiers > .tier:first-child {
+  @apply border-t-2;
+}
+
+.tiers > .tier:last-child {
+  @apply border-b-2;
+}
+
+/* Titre du Tier */
+.tier-header {
+  @apply bg-gray-500 rounded-lg h-auto shadow-sm font-bold text-lg items-center flex text-center self-stretch;
+  margin-bottom: -0.5rem;
+  width: 160px;
+  min-height: 160px;
+  min-width: 160px;
+}
+
+/* Conteneur des items dans un Tier */
+.tier-items {
+  @apply flex flex-wrap w-full;
+}
+
+/* Chaque Item */
+.tier-item {
+  @apply bg-white rounded-lg ml-2 mt-2 h-36 w-36 flex items-center shadow-sm select-none transition-all duration-150 text-center;
+}
+
+@media (min-width: 1792px) {
+  .container {
+    max-width: 1792px;
+  }
+}
+
+@media (min-width: 2048px) {
+  .container {
+    max-width: 1792px;
+  }
+}
+
+@media (min-width: 2304px) {
+  .container {
+    max-width: 1792px;
+  }
+}
+
+@media (min-width: 2560px) {
+  .container {
+    max-width: 2048px;
+  }
+}
+
+/* Hover / Drag */
+.tier-item:hover {
+  @apply shadow-lg cursor-grab;
+}
+.tier-item:active {
+  @apply cursor-grabbing;
+}
+
+/* Items non assignés */
+#unassigned-items {
+  @apply mt-1 p-2 pb-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg min-h-[178px] flex flex-wrap  relative;
+}

@@ -27,7 +27,7 @@
 
 /* Titre du Tier */
 .tier-header {
-  @apply bg-gray-500 rounded-lg h-auto shadow-sm font-bold text-lg items-center flex text-center self-stretch;
+  @apply bg-gray-500 rounded-lg shadow-sm font-bold text-lg items-center flex text-center self-stretch;
   margin-bottom: -0.5rem;
   width: 160px;
   min-height: 160px;
@@ -41,7 +41,20 @@
 
 /* Chaque Item */
 .tier-item {
-  @apply bg-white rounded-lg ml-2 mt-2 h-36 w-36 flex items-center shadow-sm select-none transition-all duration-150 text-center;
+  @apply bg-white border rounded-lg ml-2 mt-2 h-36 w-36 flex items-center shadow-sm select-none transition-all duration-150 text-center;
+}
+
+/* Hover / Drag */
+.tier-item:hover {
+  @apply shadow-lg cursor-grab;
+}
+.tier-item:active {
+  @apply cursor-grabbing;
+}
+
+/* Items non assignés */
+#unassigned-items {
+  @apply mt-1 p-2 pb-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg min-h-[178px] flex flex-wrap  relative;
 }
 
 @media (min-width: 1792px) {
@@ -66,17 +79,4 @@
   .container {
     max-width: 2048px;
   }
-}
-
-/* Hover / Drag */
-.tier-item:hover {
-  @apply shadow-lg cursor-grab;
-}
-.tier-item:active {
-  @apply cursor-grabbing;
-}
-
-/* Items non assignés */
-#unassigned-items {
-  @apply mt-1 p-2 pb-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg min-h-[178px] flex flex-wrap  relative;
 }

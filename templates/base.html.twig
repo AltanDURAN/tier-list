@@ -24,5 +24,11 @@
 
         Alpine.start();
     </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll('script[src*="app"]').forEach(s => s.defer = true);
+        });
+    </script>
 </body>
 </html>

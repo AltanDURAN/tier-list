@@ -1,0 +1,106 @@
+<div class="tier relative"
+     x-data="tierContextMenu({{ tier.id }}, {{ tier.position }})"
+     @contextmenu.prevent="openContextMenu($event)">
+
+    <!-- Header du tier -->
+    <div class="tier-header relative group"
+         x-data="tierEditor('{{ tier.name }}', {{ tier.id }}, '{{ tier.color|default('#ffffff') }}')"
+         x-init="init()"
+         @click="enableEdit()"
+         :style="`background-color: ${color}`"
+         :data-tier-id="{{ tier.id }}">
+
+        <!-- Mode affichage -->
+        <span x-show="!editing"
+              x-ref="txt"
+              x-text="name"
+              class="w-full select-none">
+        </span>
+
+        <!-- Mode édition -->
+        <input x-show="editing"
+               x-ref="input"
+               type="text"
+               class="w-full text-black bg-white px-2 py-1 rounded"
+               x-model="name"
+               @keydown.enter="save()"
+               @blur="save()"
+        >
+
+        <!-- Bouton changement couleur -->
+        <div class="absolute bottom-1 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button @click.stop="openColorPicker = !openColorPicker"
+                    class="w-7 h-7 rounded-full border border-gray-300 cursor-pointer"
+                    style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red)">
+            </button>
+        </div>
+
+        <!-- Popup couleur -->
+        <div x-show="openColorPicker" 
+             x-cloak 
+             @click.outside="closeColorPicker()" 
+             class="absolute z-50 p-2 bg-white border rounded shadow" 
+             style="bottom: 30px; right: 0;">
+            
+            <input type="color" x-model="color" class="w-full h-8 mb-2">
+
+            <div class="flex gap-1">
+                <template x-for="preset in presets" :key="preset">
+                    <div :style="`background-color: ${preset}`" 
+                         class="w-6 h-6 rounded cursor-pointer border"
+                         @click="color = preset"></div>
+                </template>
+            </div>
+
+            <div class="flex justify-end mt-2 gap-2">
+                <button @click="closeColorPicker()" class="px-2 py-1 bg-gray-300 rounded">Fermer</button>
+                <button @click="saveColor()" class="px-2 py-1 bg-green-500 text-white rounded">Valider</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items du tier -->
+    <div class="tier-items"
+         data-tier-id="{{ tier.id }}"
+         x-data
+         x-init="
+            Sortable.create($el, {
+                group: 'tiers',
+                animation: 150,
+                onEnd: evt => {
+                    const fromTierId = evt.from.dataset.tierId;
+                    const toTierId = evt.to.dataset.tierId;
+                    const itemId = evt.item.dataset.itemId;
+
+                    fetch('/tier/update-item', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ itemId, fromTierId, toTierId })
+                    });
+                }
+            });
+         ">
+        {% for item in tier.tierItems %}
+            <div class="tier-item"
+                 data-item-id="tierItemId_{{ item.id }}"
+                 data-image="{{ asset(item.image) }}"
+                 style="background-image: url('{{ asset(item.image) }}');">
+                <span class="w-full">{{ item.name }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Menu contextuel -->
+    <div x-show="menuOpen" x-cloak
+         :style="`top: ${menuTop}px; left: ${menuLeft}px;`"
+         class="absolute z-50 bg-white border rounded shadow p-2 flex flex-col gap-1"
+         @click.outside="menuOpen = false">
+
+        <button @click="addTier('above')" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">
+            Ajouter un tier au dessus
+        </button>
+        <button @click="addTier('below')" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">
+            Ajouter un tier en dessous
+        </button>
+    </div>
+</div>

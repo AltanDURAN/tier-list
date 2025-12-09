@@ -16,20 +16,16 @@ class TierRepository extends ServiceEntityRepository
         parent::__construct($registry, Tier::class);
     }
 
-    //    /**
-    //     * @return Tier[] Returns an array of Tier objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('t')
-    //            ->andWhere('t.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('t.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findByTierListOrderedByPosition($tierListId): array
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.tierList = :tierListId')
+            ->setParameter('tierListId', $tierListId)
+            ->orderBy('t.position', 'ASC') // tri par position croissante
+            ->getQuery()
+            ->getResult();
+    }
+
 
     //    public function findOneBySomeField($value): ?Tier
     //    {

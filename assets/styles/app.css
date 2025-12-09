@@ -17,17 +17,17 @@
   @apply bg-gray-100 border border-l-2 border-r-2 rounded-lg pr-2 pb-2 flex shadow-sm items-stretch;
 }
 
-.tiers > .tier:first-child {
+.tiers>.tier:first-child {
   @apply border-t-2;
 }
 
-.tiers > .tier:last-child {
+.tiers>.tier:last-child {
   @apply border-b-2;
 }
 
 /* Titre du Tier */
 .tier-header {
-  @apply bg-gray-500 rounded-lg shadow-sm font-bold text-lg items-center flex text-center self-stretch;
+  @apply rounded-lg shadow-sm font-bold text-lg items-center flex text-center self-stretch;
   margin-bottom: -0.5rem;
   width: 160px;
   min-height: 160px;
@@ -41,20 +41,21 @@
 
 /* Chaque Item */
 .tier-item {
-  @apply bg-white border rounded-lg ml-2 mt-2 h-36 w-36 flex items-center shadow-sm select-none transition-all duration-150 text-center;
+  @apply bg-white bg-cover bg-center border rounded-lg ml-2 mt-2 h-36 w-36 flex items-center shadow-sm select-none transition-all duration-150 text-center;
 }
 
 /* Hover / Drag */
 .tier-item:hover {
   @apply shadow-lg cursor-grab;
 }
+
 .tier-item:active {
   @apply cursor-grabbing;
 }
 
 /* Items non assignés */
 #unassigned-items {
-  @apply mt-1 p-2 pb-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg min-h-[178px] flex flex-wrap  relative;
+  @apply mt-1 p-2 pb-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg min-h-[178px] flex flex-wrap relative;
 }
 
 @media (min-width: 1792px) {
@@ -79,4 +80,29 @@
   .container {
     max-width: 2048px;
   }
+}
+
+#preview {
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  border: 2px solid #aaa;
+  background: #fff;
+}
+
+.cropper-point {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+#preview img {
+  width: 100%;
+}
+
+input[type="file"] {
+  margin-bottom: 20px;
+}
+
+.crop-selection-box {
+  @apply w-[304px] h-[304px] border-2 border-dashed border-gray-400 rounded flex items-center justify-center cursor-pointer overflow-hidden mb-2;
 }

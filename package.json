@@ -21,6 +21,11 @@
         "build": "encore production --progress"
     },
     "dependencies": {
+        "@cropper/element-canvas": "^2.1.0",
+        "@cropper/element-crosshair": "^2.1.0",
+        "@cropper/element-handle": "^2.1.0",
+        "@cropper/element-image": "^2.1.0",
+        "@cropper/element-selection": "^2.1.0",
         "alpinejs": "^3.15.2",
         "cropperjs": "^2.1.0",
         "sortablejs": "^1.15.6"

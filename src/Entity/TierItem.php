@@ -22,7 +22,7 @@ class TierItem
     #[ORM\Column(length: 255)]
     private ?string $image = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?int $position = null;
 
     #[ORM\ManyToOne(inversedBy: 'tierItems')]
@@ -66,7 +66,7 @@ class TierItem
         return $this->position;
     }
 
-    public function setPosition(int $position): static
+    public function setPosition(?int $position): static
     {
         $this->position = $position;
 

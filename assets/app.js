@@ -13,298 +13,314 @@ import Sortable from 'sortablejs';
 window.Alpine = Alpine;
 window.Sortable = Sortable;
 
-// Import Cropper v2 web-components
-import CropperCanvas from '@cropper/element-canvas';
-import CropperImage from '@cropper/element-image';
-import CropperSelection from '@cropper/element-selection';
-import CropperHandle from '@cropper/element-handle';
-import CropperCrosshair from '@cropper/element-crosshair';
+// CropperJS pour le recadrage d'images
+let cropper;
 
-// Manually register the custom elements
-CropperCanvas.$define();
-CropperImage.$define();
-CropperSelection.$define();
-CropperHandle.$define();
-CropperCrosshair.$define();
+// Bouton "Charger une image" --> ouvre le sélecteur
+document.getElementById('chargeImageBtn').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+});
 
-console.log("=== CROPPER.JS v2 DEBUG START ===");
-console.log("App.js chargé - Cropper web-components registered");
+// Quand une image est choisie
+document.getElementById("fileInput").addEventListener("change", function (event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-// Alpine.js component pour Cropper.js v2
-window.imageCropperPopup = function() {
-    return {
-        showPopup: false,
-        imageURL: null,
-        preview: null,
+    const url = URL.createObjectURL(file);
+    const img = document.getElementById("crop-selection-image");
+    img.src = url;
+    img.style.display = "block";
 
-        openFile() {
-            console.log("openFile() appelé");
-            this.$refs.inputFile.click();
-        },
+    // Détruire l'ancien cropper s'il existe
+    if (cropper) cropper.destroy();
 
-        onFileChange(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+    // Initialiser CropperJS
+    cropper = new Cropper(img, {
+    aspectRatio: 1,
+    viewMode: 2,
+    autoCropArea: 0.5,
+    background: false,
+    responsive: true,
+    zoomable: true,
+    movable: false,
+    crop(event) {
+        const previewBox = document.getElementById("preview");
+        const canvas = cropper.getCroppedCanvas({
+        width: 144,
+        height: 144
+        });
 
-            console.log("\n=== onFileChange START ===");
-            console.log("Fichier sélectionné :", file.name, file.size, "bytes");
+        previewBox.innerHTML = "";
+        previewBox.appendChild(canvas);
+    }
+    });
+});
 
-            if (this.imageURL) URL.revokeObjectURL(this.imageURL);
+// Bouton "Fermer" --> ferme la popup
+document.getElementById("closePopupBtn").addEventListener("click", function () {
+    clearPopup();
+});
 
-            this.imageURL = URL.createObjectURL(file);
-            this.preview = null;
+// Bouton "Valider" --> récupère Base64 + ferme la popup
+document.getElementById("savePopupBtn").addEventListener("click", async function () {
+    if (!cropper) {
+        alert("Veuillez d'abord charger une image.");
+        return;
+    }
 
-            this.$nextTick(() => {
-                setTimeout(() => {
-                    const cropperCanvas = this.$refs.cropperCanvas;
-                    const cropImage = this.$refs.cropImage;
+    const itemName = document.getElementById("imageNameInput").value.trim();
 
-                    console.log("\n--- Éléments trouvés ---");
-                    console.log("cropperCanvas:", cropperCanvas?.tagName);
-                    console.log("cropImage:", cropImage?.tagName);
+    const pathParts = window.location.pathname.split("/");
+    const tierListId = pathParts[2];
 
-                    if (!cropperCanvas || !cropImage) {
-                        console.error("❌ Éléments manquants !");
-                        return;
-                    }
+    // 1️⃣ Convertir le canvas en blob de manière synchrone
+    const blob = await new Promise(resolve => {
+        cropper.getCroppedCanvas({
+            width: 144,
+            height: 144
+        }).toBlob(resolve);
+    });
 
-                    // Assigner le src
-                    console.log("\n--- Assignation src ---");
-                    cropImage.setAttribute('src', this.imageURL);
-                    console.log("✓ src assigné");
+    // 2️⃣ Envoyer le FormData au back
+    const formData = new FormData();
+    formData.append('name', itemName);
+    formData.append('image', blob, 'item.png');
+    formData.append('tierListId', tierListId);
 
-                    // Chercher les méthodes disponibles
-                    console.log("\n--- Méthodes disponibles ---");
-                    const methodsToTest = [
-                        'reset', 'render', 'fit', 'refresh', 'update', 'initialize', 'load',
-                        'ready', 'redraw', 'draw', 'recrop', 'crop', 'getData', 'getCanvasData',
-                        'getImageData', 'getContainer', 'getCanvas', 'getImage', 'toDataURL',
-                        'getCroppedCanvas', 'setData', 'zoom', 'move', 'rotate'
-                    ];
+    const response = await fetch('/tier-item/create', {
+        method: 'POST',
+        body: formData,
+    });
 
-                    methodsToTest.forEach(method => {
-                        if (typeof cropperCanvas[method] === 'function') {
-                            console.log(`✓ cropperCanvas.${method}()`);
-                        }
-                    });
+    const data = await response.json();
 
-                    // Inspect cropper-selection
-                    const selection = cropperCanvas.querySelector('cropper-selection');
-                    console.log("\n--- Cropper Selection ---");
-                    console.log("cropper-selection found:", !!selection);
-                    if (selection) {
-                        console.log("Selection tagName:", selection.tagName);
-                        console.log("Selection movable:", selection.hasAttribute('movable'));
-                        console.log("Selection resizable:", selection.hasAttribute('resizable'));
-                        console.log("Selection style:", selection.getAttribute('style'));
-                        console.log("Selection computed display:", window.getComputedStyle(selection).display);
-                        console.log("Selection offsetWidth:", selection.offsetWidth);
-                        console.log("Selection offsetHeight:", selection.offsetHeight);
-                    }
+    const container = document.getElementById("unassigned-items");
+    const div = document.createElement("div");
 
-                    // Event listeners
-                    console.log("\n--- Event Listeners ---");
-                    const events = ['load', 'ready', 'crop', 'cropstart', 'cropend', 'cropmove', 'cropresize'];
-                    events.forEach(evt => {
-                        cropperCanvas.addEventListener(evt, (e) => {
-                            console.log(`📌 Event "${evt}":`, e.detail);
-                        });
-                    });
+    div.classList.add("tier-item");
+    div.dataset.itemId = "tierItemId_" + data.id;
+    div.style.backgroundImage = `url('${data.imageUrl}')`;
+    div.innerHTML = `
+        <span class="w-full">${data.name}</span>
+    `;
 
-                    // Listen for ready event
-                    cropperCanvas.addEventListener('ready', () => {
-                        console.log("✅ Cropper READY!");
-                        const sel = cropperCanvas.querySelector('cropper-selection');
-                        if (sel) {
-                            console.log("Selection after ready - offsetWidth:", sel.offsetWidth, "offsetHeight:", sel.offsetHeight);
-                        }
-                    });
+    container.appendChild(div);
 
-                    // Force selection to fill the canvas (workaround for initialization bug)
-                    setTimeout(() => {
-                        const sel = cropperCanvas.querySelector('cropper-selection');
-                        if (sel) {
-                            console.log("⚙️ Forcing selection size...");
-                            // Set initial coverage to fill most of canvas
-                            sel.setAttribute('initial-coverage', '0.8');
-                            
-                            // Force recalculation by triggering a manual crop event
-                            const canvas = cropperCanvas.querySelector('cropper-image');
-                            if (canvas) {
-                                // Dispatch a custom event to trigger cropper's internal layout
-                                cropperCanvas.dispatchEvent(new Event('load', { bubbles: true }));
-                            }
-                            
-                            // Log final state
-                            console.log("After force - Selection offsetWidth:", sel.offsetWidth, "offsetHeight:", sel.offsetHeight);
-                            console.log("After force - Selection style:", sel.getAttribute('style'));
-                        }
-                    }, 200);
+    clearPopup();
+});
 
-                    // Générer la preview
-                    this.updatePreview();
+// Nettoyage popup
+function clearPopup() {
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
 
-                    console.log("\n=== onFileChange END ===\n");
-                }, 100);
+    document.getElementById("preview").innerHTML = "";
+    document.getElementById("crop-selection-image").style.display = "none";
+    document.getElementById("crop-selection-image").src = "";
+    document.getElementById("fileInput").value = "";
+    document.getElementById("imageNameInput").value = "";
+}
+
+Alpine.data('tierEditor', (initialName, tierId, initialColor = '#ffffff') => ({
+    editing: false,
+    name: initialName,
+    color: initialColor,
+    originalColor: initialColor,
+    openColorPicker: false,
+    presets: ['#FFB3B3','#FFD9B3','#FFFFB3','#B3FFB3','#B3FFFF','#B3B3FF','#E6B3FF', '#FFFFFF'],
+
+    init() {
+        // attendre que le DOM soit rendu puis resize
+        this.$nextTick(() => {
+            this.resize();
+        });
+
+        // watcher pour resize automatique si le nom change
+        this.$watch('name', () => {
+            this.resize();
+        });
+    },
+
+    enableEdit() {
+        this.editing = true;
+        this.$nextTick(() => {
+            this.$refs.input.focus();
+            this.$refs.input.select();
+        });
+    },
+
+    save() {
+        this.editing = false;
+        this.resize();
+
+        fetch('/tier/update-name', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                tierId: tierId,
+                name: this.name
+            })
+        });
+    },
+
+    resize() {
+        if (!this.$refs.txt) return;
+        let span = this.$refs.txt;
+        let newSize = 150 / span.textContent.length;
+        span.style.fontSize = Math.min(100, Math.max(36, newSize)) + 'px';
+        span.style.lineHeight = span.style.fontSize;
+    },
+
+    saveColor() {
+        fetch('/tier/update-color', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                tierId: tierId,
+                color: this.color
+            })
+        });
+        this.originalColor = this.color;
+        this.openColorPicker = false;
+    },
+
+    closeColorPicker() {
+        this.color = this.originalColor; // revient à la dernière couleur sauvegardée
+        this.openColorPicker = false;
+    }
+}));
+
+Alpine.data('tierContextMenu', (tierId) => ({
+    menuOpen: false,
+    menuTop: 0,
+    menuLeft: 0,
+    openDeletePopup: false,
+
+    // Ouvre le menu contextuel à la position du clic
+    openContextMenu(event) {
+        this.menuTop = event.offsetY;
+        this.menuLeft = event.offsetX;
+        this.menuOpen = true;
+
+        // Fermer le menu si on clique ailleurs
+        const closeMenu = (e) => {
+            if (!this.$el.contains(e.target)) {
+                this.menuOpen = false;
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        document.addEventListener('click', closeMenu);
+    },
+
+    // Ajouter un nouveau tier au dessus ou en dessous
+    async addTier(position) {
+        const response = await fetch('/tier/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                referenceTierId: tierId,
+                position: position
+            })
+        });
+
+        const data = await response.json();
+
+        // Récupère l'id de la tierlist depuis l'URL
+        const pathParts = window.location.pathname.split('/');
+        const tierListId = pathParts[2];
+
+        // Recharge proprement tous les tiers
+        await reloadTiers(tierListId);
+
+        this.menuOpen = false;
+    },
+
+    // Supprimer un tier avec reload
+    async deleteTier() {
+    try {
+        const response = await fetch(`/tier/${tierId}`, {
+            method: 'DELETE',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        // Vérifie que la réponse est bien JSON
+        if (!response.ok) throw new Error('HTTP error ' + response.status);
+
+        const data = await response.json();
+
+        if (data.success) {
+            this.openDeletePopup = false;
+
+            // Ajouter les tierItems déplacés dans la zone non classée
+            const container = document.getElementById("unassigned-items");
+            data.tierItems.forEach(item => {
+                const div = document.createElement("div");
+                div.classList.add("tier-item");
+                div.dataset.itemId = "tierItemId_" + item.id;
+                div.style.backgroundImage = `url('${item.imageUrl}')`;
+                div.innerHTML = `<span class="w-full">${item.name}</span>`;
+                container.appendChild(div);
             });
-        },
 
-        updatePreview() {
-            if (!this.imageURL) {
-                console.warn("updatePreview: pas d'imageURL");
-                return;
-            }
+            // Recharge tous les tiers pour garder les positions correctes
+            const pathParts = window.location.pathname.split('/');
+            const tierListId = pathParts[2];
+            await reloadTiers(tierListId);
 
-            console.log("updatePreview() appelé");
-
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-
-            img.onload = () => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 144;
-                    canvas.height = 144;
-                    const ctx = canvas.getContext('2d');
-
-                    const ratio = Math.max(img.width / 144, img.height / 144);
-                    const sw = 144 * ratio;
-                    const sh = 144 * ratio;
-                    const sx = Math.max(0, (img.width - sw) / 2);
-                    const sy = Math.max(0, (img.height - sh) / 2);
-
-                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 144, 144);
-                    this.preview = canvas.toDataURL('image/png');
-                    console.log("✓ preview générée (144x144)");
-                } catch (err) {
-                    console.error("Erreur génération preview:", err);
-                }
-            };
-
-            img.onerror = () => {
-                console.error("Erreur chargement image pour preview");
-            };
-
-            img.src = this.imageURL;
-        },
-                async saveCrop() {
-            if (!this.preview && !this.imageURL) {
-                alert('Aucune image sélectionnée !');
-                return;
-            }
-
-            console.log('=== saveCrop START ===');
-
-            const cropperCanvas = this.$refs.cropperCanvas;
-            const selection = cropperCanvas?.querySelector('cropper-selection');
-
-            if (!selection) {
-                console.error("❌ Selection not found");
-                alert('Erreur: sélection non trouvée');
-                return;
-            }
-
-            const selStyle = selection.getAttribute('style') || '';
-            // parse numbers with optional decimals and optional negative sign
-            const transformMatch = selStyle.match(/translate\((-?\d+(?:\.\d+)?)px,\s*(-?\d+(?:\.\d+)?)px\)/);
-            const widthMatch = selStyle.match(/width:\s*(-?\d+(?:\.\d+)?)px/);
-            const heightMatch = selStyle.match(/height:\s*(-?\d+(?:\.\d+)?)px/);
-
-            const selX = transformMatch ? parseFloat(transformMatch[1]) : 0;
-            const selY = transformMatch ? parseFloat(transformMatch[2]) : 0;
-            const selW = widthMatch ? parseFloat(widthMatch[1]) : selection.offsetWidth || 144;
-            const selH = heightMatch ? parseFloat(heightMatch[1]) : selection.offsetHeight || 144;
-
-            console.log(`Selection raw: x=${selX}, y=${selY}, w=${selW}, h=${selH}`);
-
-            // Try to find the internal <img> element inside cropper-image's shadowRoot
-            let internalImg = null;
-            try {
-                const cropperImageEl = cropperCanvas.querySelector('cropper-image') || this.$refs.cropImage;
-                internalImg = cropperImageEl && cropperImageEl.shadowRoot
-                    ? cropperImageEl.shadowRoot.querySelector('img')
-                    : cropperCanvas.querySelector('img') || null;
-            } catch (e) {
-                internalImg = cropperCanvas.querySelector('img') || null;
-            }
-
-            if (!internalImg) {
-                console.warn('internal image element not found, fallback to using imageURL and natural size');
-            }
-
-            // Get bounding boxes
-            const containerRect = cropperCanvas.getBoundingClientRect();
-            const imgRect = internalImg ? internalImg.getBoundingClientRect() : containerRect;
-
-            const imgDisplayLeft = imgRect.left - containerRect.left;
-            const imgDisplayTop = imgRect.top - containerRect.top;
-            const imgDisplayWidth = imgRect.width;
-            const imgDisplayHeight = imgRect.height;
-
-            const naturalW = internalImg && internalImg.naturalWidth ? internalImg.naturalWidth : imgDisplayWidth;
-            const naturalH = internalImg && internalImg.naturalHeight ? internalImg.naturalHeight : imgDisplayHeight;
-
-            console.log(`container: ${containerRect.width}x${containerRect.height}`);
-            console.log(`img display: ${imgDisplayWidth}x${imgDisplayHeight} @ (${imgDisplayLeft},${imgDisplayTop})`);
-            console.log(`img natural: ${naturalW}x${naturalH}`);
-
-            // scale from display -> natural
-            const scaleX = naturalW / imgDisplayWidth;
-            const scaleY = naturalH / imgDisplayHeight;
-
-            // map selection coordinates to image coordinates (account for image offset)
-            const cropX = Math.max(0, (selX - imgDisplayLeft) * scaleX);
-            const cropY = Math.max(0, (selY - imgDisplayTop) * scaleY);
-            const cropW = Math.max(1, selW * scaleX);
-            const cropH = Math.max(1, selH * scaleY);
-
-            console.log(`Mapped crop on source: x=${cropX}, y=${cropY}, w=${cropW}, h=${cropH}`);
-
-            // Use the internalImg if available (already loaded). Otherwise create a new Image from imageURL.
-            const sourceImg = internalImg && internalImg.complete ? internalImg : await new Promise((resolve, reject) => {
-                const i = new Image();
-                i.crossOrigin = 'anonymous';
-                i.onload = () => resolve(i);
-                i.onerror = reject;
-                i.src = this.imageURL;
-            });
-
-            // Create output canvas (144x144 preview size)
-            const outSize = 144;
-            const outputCanvas = document.createElement('canvas');
-            outputCanvas.width = outSize;
-            outputCanvas.height = outSize;
-            const ctx = outputCanvas.getContext('2d');
-
-            // Clamp crop to source bounds
-            const sx = Math.max(0, Math.min(sourceImg.naturalWidth - 1, cropX));
-            const sy = Math.max(0, Math.min(sourceImg.naturalHeight - 1, cropY));
-            const sw = Math.max(1, Math.min(sourceImg.naturalWidth - sx, cropW));
-            const sh = Math.max(1, Math.min(sourceImg.naturalHeight - sy, cropH));
-
-            try {
-                ctx.drawImage(sourceImg, sx, sy, sw, sh, 0, 0, outSize, outSize);
-                const croppedBase64 = outputCanvas.toDataURL('image/png');
-                console.log('✓ Cropped image extracted (manual mapping)');
-                this.preview = croppedBase64;
-
-                // keep or close modal: update preview and close
-                this.close();
-            } catch (err) {
-                console.error('Error while drawing cropped image:', err);
-                alert('Erreur lors de l\'extraction du crop');
-            }
-
-            console.log('=== saveCrop END ===');
-        },
-        close() {
-            console.log("close() appelé");
-            this.showPopup = false;
-            this.imageURL = null;
-            this.preview = null;
+        } else {
+            alert('Erreur lors de la suppression du tier');
         }
+    } catch (err) {
+        console.error(err);
+        // Optionnel : tu peux commenter l'alerte si tu veux juste loguer
+        // alert('Erreur lors de la suppression du tier');
     }
 }
+}));
+
+// Reload tiers (inchangé)
+window.reloadTiers = async function(tierListId) {
+    const html = await fetch(`/tierlist/${tierListId}/tiers-html`)
+        .then(r => r.text());
+
+    const container = document.getElementById("tiers-container");
+    container.innerHTML = html;
+
+    // Réinitialiser Alpine sur le HTML reconstruit (v3)
+    Alpine.initTree(container);
+
+    // Réinitialiser Sortable après réinsertion
+    Sortable.create(container, {
+        animation: 150,
+        handle: '.tier-header',
+        draggable: '.tier',
+        onEnd: evt => {
+            const tiers = [...container.children];
+            const positions = tiers.map((tierEl, index) => ({
+                tierId: tierEl.querySelector('.tier-header').dataset.tierId,
+                position: index
+            }));
+
+            fetch('/tier/update-positions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ positions })
+            });
+        }
+    });
+}
+
 
 // Start Alpine
 console.log('Démarrage d\'Alpine.js');

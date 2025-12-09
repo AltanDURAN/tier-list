@@ -34,6 +34,9 @@ class Tier
     #[ORM\JoinColumn(nullable: false)]
     private ?TierList $tierList = null;
 
+    #[ORM\Column(length: 7, nullable: true)]
+    private ?string $color = null;
+
     public function __construct()
     {
         $this->tierItems = new ArrayCollection();
@@ -61,7 +64,7 @@ class Tier
         return $this->position;
     }
 
-    public function setPosition(int $position): static
+    public function setPosition(?int $position): static
     {
         $this->position = $position;
 
@@ -106,6 +109,18 @@ class Tier
     public function setTierList(?TierList $tierList): static
     {
         $this->tierList = $tierList;
+
+        return $this;
+    }
+
+    public function getColor(): ?string
+    {
+        return $this->color;
+    }
+
+    public function setColor(?string $color): static
+    {
+        $this->color = $color;
 
         return $this;
     }

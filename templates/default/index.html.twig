@@ -80,31 +80,64 @@
             </button>
         </div>
 
-        <!-- Popup -->
+        <!-- Nouveau Popup Cropper.js v2 -->
         <div x-show="showPopup" x-transition
-             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div class="bg-white p-6 rounded shadow-lg w-[450px]">
-                <!-- Titre -->
-                <h2 class="text-3xl font-bold mb-4 text-center">Ajouter un élément</h2>
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div id="container" class="bg-white p-6 rounded shadow-lg w-[480px] flex flex-col items-center">
 
-                <!-- Cadre carré pointillé -->
-                <div class="relative w-48 h-48 mx-auto border-dashed border-2 border-gray-300 rounded flex items-center justify-center cursor-pointer">
-                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor"
-                         viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M12 4v16m8-8H4"/>
-                    </svg>
+                <!-- Titre -->
+                <h2 class="text-2xl w-full font-bold mb-4 text-center">Ajouter un élément</h2>
+
+                <!-- Carré de sélection 192x192 -->
+                <div class="crop-selection-box">
+                    <img id="crop-selection-image" style="max-width: 100%; display: none;" />
                 </div>
 
-                <!-- Boutons -->
-                <div class="popup-buttons flex mt-4 justify-between">
-                    <button @click="showPopup = false"
-                            class="w-24 py-1 bg-gray-300 rounded hover:bg-gray-400">
-                        <span class="text-xl w-full">Fermer</span>
+                <div id="imageInputContainer" class="w-full flex flex-col items-center">
+                    <input id="fileInput" class="hidden" type="file" accept="image/*" />
+
+                    <!-- Boutons Charger une image -->
+                    <button id="chargeImageBtn" class="w-48 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        <span class="text-xl w-full">
+                            Charger une image
+                        </span>
                     </button>
-                    <button @click="showPopup = false"
-                            class="w-24 py-1 bg-green-500 text-white rounded hover:bg-green-600">
-                        <span class="text-xl w-full">Valider</span>
+                </div>
+
+                <!-- Preview 144x144 -->
+                <div id="previewContainer" class="mt-4 w-full flex flex-col items-center">
+                    <span class="mb-2 text-2xl">
+                        Prévisualisation
+                    </span>
+
+                    <div id="preview" class="box w-[144px] h-[144px] border rounded border-gray-300 mb-4 flex items-center justify-center"></div>
+                </div>
+
+                <!-- Nom de l'image chargée -->
+                <div id="imageNameContainer" class="mb-8">
+                    <label class="block w-full mb-1 text-lg">Nom de l'image</label>
+                    <input 
+                        id="imageNameInput"
+                        type="text"
+                        placeholder="Entrez un nom"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                    >
+                </div>
+
+                <!-- Boutons de sortie de Popup-->
+                <div class="flex w-full">
+                    <!-- Boutons Fermer -->
+                    <button @click="showPopup = false" id="closePopupBtn" class="w-28 py-2 mr-auto bg-gray-300 rounded hover:bg-gray-400">
+                        <span class="text-xl w-full">
+                            Fermer
+                        </span>
+                    </button>
+                    
+                    <!-- Valider -->
+                    <button @click="showPopup = false" id="savePopupBtn" class="w-28 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        <span class="text-xl w-full">
+                            Valider
+                        </span>
                     </button>
                 </div>
             </div>

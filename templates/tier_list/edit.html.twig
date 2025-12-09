@@ -1,53 +1,262 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-<div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">Édition de la Tier List : {{ tierList.name }}</h1>
+<div class="container w-5/6 mx-auto p-4">
 
-    <div class="grid gap-4">
-        {% for tier in tierList.tiers %}
-        <div class="tier p-4 border rounded bg-gray-50" data-tier-id="{{ tier.id }}">
-            <h2 class="font-semibold mb-2">{{ tier.name }}</h2>
-            <div class="tier-items grid gap-2" x-data x-init="
-                Sortable.create($el, {
-                    group: 'tiers',
-                    animation: 150,
-                    onEnd: function(evt) {
-                        console.log('Item déplacé', evt.item.dataset.itemId, 'dans tier', evt.to.dataset.tierId)
-                        // Ici tu peux envoyer un fetch/Ajax pour mettre à jour la position
-                    }
+    <!-- Nom de la Tier List -->
+    <div 
+        x-data="{
+            editing: false,
+            name: '{{ tierList.name }}',
+            inputRef: null,
+            save() {
+                fetch('/tierlist/update-name/{{ tierList.id }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: this.name })
                 });
-            ">
-                {% for item in tier.tierItems %}
-                <div class="tier-item p-2 bg-white border rounded flex items-center gap-2" data-item-id="{{ item.id }}">
-                    <img src="{{ asset('uploads/' ~ item.image) }}" alt="{{ item.name }}" class="w-10 h-10 object-cover rounded">
-                    <span>{{ item.name }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endfor %}
+            }
+        }"
+        class="flex items-center justify-center gap-3 mb-6"
+    >
+
+        <!-- Champ modifiable -->
+        <input 
+            x-ref="titleInput"
+            x-show="editing"
+            x-model="name"
+            @keydown.enter="editing = false; save()"
+            @blur="editing = false; save()"
+            type="text"
+            class="text-6xl font-bold text-center bg-transparent border-b border-gray-400 focus:outline-none px-2"
+        >
+
+        <!-- Titre affiché -->
+        <h1 
+            x-show="!editing"
+            x-text="name"
+            class="text-6xl font-bold text-center"
+        ></h1>
+
+        <!-- Bouton stylo -->
+        <button 
+            @click="editing = true; $nextTick(() => $refs.titleInput.focus())"
+            class="p-2 rounded-lg hover:bg-gray-200"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke-width="2" 
+                stroke="black" 
+                class="w-8 h-8">
+                <path stroke-linecap="round" 
+                    stroke-linejoin="round" 
+                    d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.313l-4.5 1.125 1.125-4.5 12.737-12.451z" />
+            </svg>
+        </button>
     </div>
 
-    <h2 class="mt-6 font-semibold">Non classés</h2>
-    <div class="tier-items grid gap-2 p-2 border rounded bg-gray-100" x-data x-init="
-        Sortable.create($el, {
-            group: 'tiers',
-            animation: 150,
-            onEnd: function(evt) {
-                console.log('Item déplacé dans non classés', evt.item.dataset.itemId)
-                // Ici fetch/Ajax pour mettre tier_id=null
-            }
-        });
-    ">
-        {% for item in tierList.items %}
-            {% if item.tier is null %}
-                <div class="tier-item p-2 bg-white border rounded flex items-center gap-2" data-item-id="{{ item.id }}">
-                    <img src="{{ asset('uploads/' ~ item.image) }}" alt="{{ item.name }}" class="w-10 h-10 object-cover rounded">
-                    <span>{{ item.name }}</span>
+
+    <!-- Tiers -->
+    <div id="tiers-container"
+     class="tiers"
+     x-data
+     x-init="
+         Sortable.create($el, {
+             animation: 150,
+             handle: '.tier-header',
+             draggable: '.tier',
+             onEnd: evt => {
+                 const tiers = [...$el.children];
+                 const positions = tiers.map((tierEl, index) => ({
+                     tierId: tierEl.querySelector('.tier-header').dataset.tierId,
+                     position: index
+                 }));
+                 fetch('/tier/update-positions', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                     body: JSON.stringify({ positions })
+                 });
+             }
+         });
+     "
+>
+    {% include 'tier_list/_tiers.html.twig' with { tiers: tiers } %}
+</div>
+
+
+
+
+    <!-- Gestion éléments non classés -->
+    <div x-data="{ q: '', showPopup: false }">
+        <!-- Search bar -->
+        <div class="unassigned-items-header mt-4 flex items-center">
+            <div class="relative w-1/6 mr-auto">
+                <input type="text"
+                       placeholder="Rechercher un item..."
+                       class="px-10 py-2 border rounded w-full focus:outline-none focus:ring focus:border-blue-300"
+                       x-model="q">
+
+                <svg class="w-7 h-7 absolute left-2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24" style="top: 48%;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-4.35-4.35M5 11a6 6 0 1112 0 6 6 0 01-12 0z"/>
+                </svg>
+
+                <button x-show="q"
+                        @click="q=''"
+                        class="absolute right-2 -translate-y-1/2 text-gray-500 hover:text-gray-800 text-4xl"
+                        style="top: 43%;">&times;</button>
+            </div>
+
+            <!-- Bouton Ajouter -->
+            <button @click="showPopup = true"
+                    class="px-3 py-[6px] bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center ml-4">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="w-7 h-7 mr-2" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"
+                            stroke-linecap="round" stroke-linejoin="round"/>
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 8v8M8 12h8"/>
+                </svg>
+                <span class="text-lg">Ajouter un élément</span>
+            </button>
+        </div>
+
+        <!-- Nouveau Popup Cropper.js v2 -->
+        <div x-show="showPopup" x-transition
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div id="container" class="bg-white p-6 rounded shadow-lg w-[480px] flex flex-col items-center">
+
+                <!-- Titre -->
+                <h2 class="text-2xl w-full font-bold mb-4 text-center">Ajouter un élément</h2>
+
+                <!-- Carré de sélection 192x192 -->
+                <div class="crop-selection-box">
+                    <img id="crop-selection-image" style="max-width: 100%; display: none;" />
                 </div>
-            {% endif %}
-        {% endfor %}
+
+                <div id="imageInputContainer" class="w-full flex flex-col items-center">
+                    <input id="fileInput" class="hidden" type="file" accept="image/*" />
+
+                    <!-- Boutons Charger une image -->
+                    <button id="chargeImageBtn" class="w-48 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        <span class="text-xl w-full">
+                            Charger une image
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Preview 144x144 -->
+                <div id="previewContainer" class="mt-4 w-full flex flex-col items-center">
+                    <span class="mb-2 text-2xl">
+                        Prévisualisation
+                    </span>
+
+                    <div id="preview" class="box w-[144px] h-[144px] border rounded border-gray-300 mb-4 flex items-center justify-center"></div>
+                </div>
+
+                <!-- Nom de l'image chargée -->
+                <div id="imageNameContainer" class="mb-8">
+                    <label class="block w-full mb-1 text-lg">Nom de l'image</label>
+                    <input 
+                        id="imageNameInput"
+                        type="text"
+                        placeholder="Entrez un nom"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+                    >
+                </div>
+
+                <!-- Boutons de sortie de Popup-->
+                <div class="flex w-full">
+                    <!-- Boutons Fermer -->
+                    <button @click="showPopup = false" id="closePopupBtn" class="w-28 py-2 mr-auto bg-gray-300 rounded hover:bg-gray-400">
+                        <span class="text-xl w-full">
+                            Fermer
+                        </span>
+                    </button>
+                    
+                    <!-- Valider -->
+                    <button @click="showPopup = false" id="savePopupBtn" class="w-28 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        <span class="text-xl w-full">
+                            Valider
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste filtrée -->
+        <div id="unassigned-items" class="tier-items"
+            data-tier-id="unassigned"
+            data-unassigned="unassigned"
+            x-init="Sortable.create($el, { 
+                group: 'tiers', 
+                animation: 150,
+                onEnd: evt => {
+                    const fromTierId = evt.from.dataset.unassigned;
+                    const toTierId = evt.to.dataset.tierId;
+                    const itemId = evt.item.dataset.itemId;
+
+                    console.log(`Item ${itemId} déplacé de ${fromTierId} → ${toTierId}`);
+
+                    fetch('/tier/update-item', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            itemId: itemId,
+                            fromTierId: fromTierId,
+                            toTierId: toTierId
+                        })
+                    });
+                }
+            })"
+            x-effect="
+                if (!q) {
+                    // pas de recherche : tous visibles, pas de 'aucun résultat'
+                    [...$el.children].forEach(el => {
+                        if (!el.classList.contains('no-results')) el.style.display = 'flex';
+                    });
+                    $el.querySelector('.no-results').style.display = 'none';
+                } else {
+                    let visibleCount = 0;
+                    [...$el.children].forEach(el => {
+                        if (el.classList.contains('no-results')) return;
+                        const name = el.innerText.toLowerCase();
+                        let qClean = q.toLowerCase().replace(/\s+/g, '');
+                        let nameClean = name.replace(/\s+/g, '');
+                        let i = 0, match = true;
+                        for (const c of qClean) {
+                            i = nameClean.indexOf(c, i);
+                            if (i === -1) { match = false; break; }
+                            i++;
+                        }
+                        el.style.display = match ? 'flex' : 'none';
+                        if (match) visibleCount++;
+                    });
+                    $el.querySelector('.no-results').style.display =
+                        visibleCount === 0 ? 'flex' : 'none';
+                }
+            "
+            >
+
+            {% for itemUnranked in tierList.items %}
+                {% if itemUnranked.tier is null %}
+                    <div class="tier-item" data-item-id="tierItemId_{{ itemUnranked.id }}" data-image="{{ asset(itemUnranked.image) }}" style="background-image: url('{{ asset(itemUnranked.image) }}');">
+                        <span class="w-full">{{ itemUnranked.name }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <div class="no-results absolute inset-0 flex items-center justify-center
+                        text-gray-400 text-center pointer-events-none text-xl"
+                 style="display:none;">
+                 Aucun résultat
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

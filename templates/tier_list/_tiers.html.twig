@@ -1,0 +1,115 @@
+{% for tier in tiers %}
+<div class="tier relative"
+                x-data="tierContextMenu({{ tier.id }}, {{ tier.position }})"
+                @contextmenu.prevent="openContextMenu($event)">
+
+                <div class="tier-header relative group"
+                    x-data="tierEditor('{{ tier.name }}', {{ tier.id }}, '{{ tier.color|default('#ffffff') }}')"
+                    x-init="init()"
+                    :style="`background-color: ${color}`"
+                    :data-tier-id="{{ tier.id }}">
+
+                    <!-- Mode affichage -->
+                    <span x-show="!editing" x-ref="txt" x-text="name" class="w-full select-none" @click="enableEdit()"></span>
+
+                    <!-- Mode édition -->
+                    <input x-show="editing" x-ref="input" type="text" class="w-full text-black bg-white px-2 py-1 rounded"
+                        x-model="name" @keydown.enter="save()" @blur="save()">
+
+                    <!-- Bouton supprimer tier -->
+                    <div class="absolute bottom-1 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button 
+                            @click.stop="openDeletePopup = true"
+                            class="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-red-600 hover:bg-red-100"
+                            title="Supprimer le tier">
+                            <!-- Heroicons Trash -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-6 0V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Popup suppression -->
+<div 
+    x-show="openDeletePopup" 
+    x-cloak
+    @click.outside="openDeletePopup = false"
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    
+    <div class="bg-white p-6 rounded shadow-lg w-96 flex flex-col items-center">
+        <h2 class="text-xl font-bold mb-4 text-center">Êtes-vous sûr de vouloir supprimer ce tier ?</h2>
+
+        <div class="flex gap-4">
+            <button 
+                @click="openDeletePopup = false"
+                class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
+                Annuler
+            </button>
+
+            <button 
+                @click="deleteTier()"
+                class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                Confirmer
+            </button>
+        </div>
+    </div>
+</div>
+
+
+                    <!-- Bouton couleur et popup couleur -->
+                    <div class="absolute bottom-1 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button @click.stop="openColorPicker = !openColorPicker"
+                                class="w-7 h-7 rounded-full border border-gray-300 cursor-pointer"
+                                style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red)">
+                        </button>
+                    </div>
+
+                    <div x-show="openColorPicker" x-cloak @click.outside="closeColorPicker()"
+                        class="absolute z-50 p-2 bg-white border rounded shadow" style="bottom:30px; right:0;">
+                        <input type="color" x-model="color" class="w-full h-8 mb-2">
+                        <div class="flex gap-1">
+                            <template x-for="preset in presets" :key="preset">
+                                <div :style="`background-color: ${preset}`" class="w-6 h-6 rounded cursor-pointer border"
+                                    @click="color = preset"></div>
+                            </template>
+                        </div>
+                        <div class="flex justify-end mt-2 gap-2">
+                            <button @click="closeColorPicker()" class="px-2 py-1 bg-gray-300 rounded">Fermer</button>
+                            <button @click="saveColor()" class="px-2 py-1 bg-green-500 text-white rounded">Valider</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items du tier -->
+                <div class="tier-items" data-tier-id="{{ tier.id }}"
+                    x-data
+                    x-init="Sortable.create($el, {group:'tiers', animation:150,
+                        onEnd: evt => {
+                            const fromTierId = evt.from.dataset.tierId;
+                            const toTierId = evt.to.dataset.tierId;
+                            const itemId = evt.item.dataset.itemId;
+                            fetch('/tier/update-item', {
+                                method:'POST', headers:{'Content-Type':'application/json'},
+                                body: JSON.stringify({itemId, fromTierId, toTierId})
+                            });
+                        }
+                    });"
+                >
+                    {% for item in tier.tierItems %}
+                        <div class="tier-item" data-item-id="tierItemId_{{ item.id }}" data-image="{{ asset(item.image) }}" style="background-image:url('{{ asset(item.image) }}');">
+                            <span class="w-full">{{ item.name }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Menu contextuel -->
+                <div x-show="menuOpen" x-cloak
+                    :style="`top: ${menuTop}px; left: ${menuLeft}px;`"
+                    class="absolute z-50 bg-white border rounded shadow p-2 flex flex-col gap-1"
+                    @click.outside="menuOpen = false">
+
+                    <button @click="addTier('above')" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">Ajouter un tier au dessus</button>
+                    <button @click="addTier('below')" class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">Ajouter un tier en dessous</button>
+                </div>
+            </div>
+            {% endfor %}

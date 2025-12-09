@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tier List{% endblock %}</title>
 
+    <!-- CropperJS v2 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/2.0.0-alpha.2/cropper.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/2.0.0-alpha.2/cropper.min.js"></script>
+
     {{ encore_entry_link_tags('app') }}
 </head>
 
@@ -12,23 +16,8 @@
 
     {% block body %}{% endblock %}
 
+    {# Scripts compilés par Webpack Encore #}
     {{ encore_entry_script_tags('app') }}
 
-    <!-- Alpine + Sortable -->
-    <script type="module">
-        import Alpine from 'https://esm.sh/alpinejs';
-        import Sortable from 'https://esm.sh/sortablejs';
-
-        window.Alpine = Alpine;
-        window.Sortable = Sortable;
-
-        Alpine.start();
-    </script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll('script[src*="app"]').forEach(s => s.defer = true);
-        });
-    </script>
 </body>
 </html>
